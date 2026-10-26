@@ -1,0 +1,1 @@
+php-common:Breaks=php8.2-apcu (<< 5.1.23-1~), php8.2-imagick (<< 3.7.0-5~), php8.2-oauth (<< 2.0.7++-1~)

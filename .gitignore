@@ -1,0 +1,11 @@
+# Build outputs and logs
+build-docker.log
+out/
+
+# Test inputs (downloaded from Launchpad, see build.md)
+old/
+oldlibs/
+
+# Quilt metadata and temporary extraction directories
+sury/build/*/.pc/
+sury/deb/

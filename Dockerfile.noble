@@ -1,0 +1,31 @@
+# Build php8.2 8.2.35-1 (Sury backport of CVE-2026-109618 / CVE-2026-109619) as
+# Ubuntu 24.04 "noble" .deb packages, against the noble archive frozen at SNAPSHOT
+# (snapshot.ubuntu.com), so the build is reproducible and links the same libraries
+# as an up-to-date 24.04.5 host (libc6 2.39, libicu74, libssl3t64, libcurl4t64).
+FROM ubuntu:24.04
+
+ARG SNAPSHOT=20261020T000000Z
+ENV DEBIAN_FRONTEND=noninteractive LANG=C.UTF-8
+
+# snapshot.ubuntu.com is https-only: get ca-certificates from the plain archive first
+RUN echo 'Acquire::Retries "5";' > /etc/apt/apt.conf.d/99retries \
+ && apt-get update && apt-get install -y --no-install-recommends ca-certificates \
+ && apt-get update --snapshot "$SNAPSHOT" \
+ && apt-get install -y --no-install-recommends --snapshot "$SNAPSHOT" \
+      build-essential devscripts equivs quilt fakeroot
+
+COPY sury/build/php8.2-8.2.35 /src/php8.2-8.2.35
+COPY sury/php8.2_8.2.35.orig.tar.xz /src/
+WORKDIR /src/php8.2-8.2.35
+
+RUN mk-build-deps debian/control \
+ && apt-get install -y --no-install-recommends --snapshot "$SNAPSHOT" ./php8.2-build-deps_*.deb \
+ && rm -f php8.2-build-deps_*
+
+# Local version suffix so it sorts above Ubuntu's 8.2.7-1ubuntu1 and is identifiable on the hosts
+RUN DEBEMAIL="arnaud.hallais@havas.com" DEBFULLNAME="Arnaud Hallais" \
+    dch -b -v 8.2.35-1~ubuntu24.04+1 -D noble \
+    "Rebuild of Sury 8.2.35-1 against noble@${SNAPSHOT} for Ubuntu 24.04 hosts (CVE-2026-109618, CVE-2026-109619); telemetry patch 0048 dropped."
+
+RUN DEB_BUILD_OPTIONS="nocheck parallel=$(nproc)" dpkg-buildpackage -us -uc -b > /src/build.log 2>&1 \
+ || (tail -80 /src/build.log; exit 1)
