@@ -158,6 +158,9 @@ mkdir -p extra && docker run --rm -v $PWD/extra:/out ubuntu:24.04 bash -c \
   'apt-get update -qq && cd /tmp && apt-get download libzip4t64 && cp libzip4t64_*.deb /out/'
 sha256sum extra/libzip4t64_*.deb   # d7484efd8d9968ecab9e488fde59980fc633e0eb2bbf7f1ea8e33bf71c9ff1fb (1.7.3-1.1ubuntu2)
 cp extra/libzip4t64_*.deb release/php8.2-8.2.35-1-noble/
+# Ubuntu's php8.2-mongodb (= old/), so the script can reinstall it if php8.3's removal took it
+sha256sum extra/php8.2-mongodb_*.deb   # bbae77c2d73c03ef5e03387284262297c11774228d80fa3dddbc919dee751e5d
+cp extra/php8.2-mongodb_*.deb release/php8.2-8.2.35-1-noble/
 (cd release/php8.2-8.2.35-1-noble && sha256sum *.deb > SHA256SUMS)
 (cd release && tar -cf php8.2-8.2.35-1-noble.tar php8.2-8.2.35-1-noble && sha256sum php8.2-8.2.35-1-noble.tar)
 ```
@@ -170,6 +173,6 @@ cp extra/libzip4t64_*.deb release/php8.2-8.2.35-1-noble/
 | `sury/` | downloaded PPA source + patched tree in `sury/build/php8.2-8.2.35` |
 | `out/` | build output (all .debs incl. dbgsym, `build.log`) |
 | `old/`, `oldlibs/` | Ubuntu 8.2.7-1ubuntu1 + php8.2-mongodb debs, mantic libicu72 + libzip4 + php-common, used for upgrade tests |
-| `extra/` | noble's `libzip4t64`, shipped in the release for php8.2-zip |
+| `extra/` | noble's `libzip4t64` (for php8.2-zip) and Ubuntu's `php8.2-mongodb` 1.15.0, shipped in the release |
 | `test-upgrade.sh`, `test-upgrade.log` | upgrade test and its result |
 | `release/` | what gets shipped to the VMs |

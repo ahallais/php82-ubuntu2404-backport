@@ -40,6 +40,7 @@ run below refuses to install. Don't force it; ask for a matching build.
 php8.2-8.2.35-1-noble/
   *.deb               all php8.2 packages (fpm, cli, common, curl, gd, intl, pgsql, zip, ...)
                       + Ubuntu's libzip4t64 (noble universe), needed by php8.2-zip
+                      + Ubuntu's php8.2-mongodb 1.15.0 (only used to reinstall it, see below)
   SHA256SUMS          checksums of the .deb files
   upgrade-php82.sh    install script
   install.md          this file
@@ -67,6 +68,8 @@ The script:
 2. Picks the php8.2 packages installed on this VM (`ii` or held `hi`) that have a rebuilt
    `.deb` in the bundle. Others are listed as `Keeping ...`: `php8.2-mongodb` (separate source
    package) is left as is and keeps working. If it finds none, it prints what dpkg reports.
+   If `php8.2-mongodb` was removed (`rc` in `dpkg -l`, e.g. by removing php8.3), it is
+   reinstalled from the bundle (`Will reinstall php8.2-mongodb`).
 3. Simulates the install with apt. It **aborts** if apt would also need to upgrade or remove
    any other package. It may install new libraries, which it lists:
    - `libzip4t64` for `php8.2-zip`, from the bundle. It's Ubuntu's own noble package, in the
@@ -88,7 +91,7 @@ What it does:
 
 1. Backs up `/etc/php/8.2` to `/root/etc-php-8.2.bak.<date>`.
 2. Installs the packages and **keeps your local config edits** (`pool.d/*.conf`, `php.ini`,
-   `conf.d/*`).
+   `conf.d/*`). Marks `php8.2-mongodb` as manually installed, so `apt autoremove` keeps it.
 3. Runs `php-fpm8.2 -t` (configuration test).
 4. Restarts `php8.2-fpm` and prints the new version.
 
@@ -137,8 +140,15 @@ sudo apt-mark hold php-common     # keep mantic's 2:93ubuntu1 (see "Who this is 
 php -v | head -1                  # PHP 8.2.35 (cli): /usr/bin/php now points to php8.2
 ```
 
-`php-common` and the php8.2 packages stay, and `apt autoremove` has nothing to remove (tested).
-Scripts and cron jobs that call `php` now run php8.2.
+`php-common` and the php8.2 packages stay. Check the simulation: if it also lists
+`php8.2-mongodb`, or a later `apt autoremove` would remove it (it can be marked as installed
+automatically, e.g. as a dependency of `php-mongodb`), run `sudo apt-mark manual php8.2-mongodb`
+first. Scripts and cron jobs that call `php` now run php8.2.
+
+If `php8.2-mongodb` was removed anyway (`dpkg -l php8.2-mongodb` shows `rc`, composer reports
+`ext-mongodb ... is missing from your system`), re-run the script from the bundle:
+`sudo ./upgrade-php82.sh`, then `sudo ./upgrade-php82.sh --apply`. It reinstalls
+`php8.2-mongodb` 1.15.0 and leaves the other packages as they are.
 
 ## Behaviour change to know about
 

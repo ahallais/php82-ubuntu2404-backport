@@ -50,3 +50,18 @@ php-fpm8.2 -D; sleep 1
 for i in 1 2 3; do SCRIPT_FILENAME=/var/www/t.php REQUEST_METHOD=GET cgi-fcgi -bind -connect /run/php/php8.2-fpm.sock | tail -1; done
 echo -n "libzip: "; dpkg -l 'libzip4*' | awk '/^ii/{print $2, $3}' | tr '\n' ' '; echo
 php8.2 -r '$z = new ZipArchive; var_dump($z->open("/tmp/t.zip", ZipArchive::CREATE) && $z->addFromString("a", "b") && $z->close());'
+
+echo "== 6. php8.2-mongodb lost with php8.3, restored by the script"
+pkill php-fpm8.2 || true
+apt-mark auto php8.2-mongodb >/dev/null   # like a VM where it came in as a dependency
+/tmp/rel/upgrade-php82.sh --apply >/tmp/mark.log 2>&1 || { tail -30 /tmp/mark.log; exit 1; }
+echo -n "marked: "; apt-mark showmanual php8.2-mongodb
+apt-mark auto php8.2-mongodb >/dev/null
+apt-get purge -y -qq 'php8.3*' >/dev/null 2>&1 && apt-get autoremove -y -qq >/dev/null 2>&1
+dpkg -l php8.2-mongodb | awk '/^[a-z][a-z] /{print $1, $2, $3}'
+/tmp/rel/upgrade-php82.sh | grep -v "^Will upgrade"
+/tmp/rel/upgrade-php82.sh --apply >/tmp/re.log 2>&1 || { tail -30 /tmp/re.log; exit 1; }
+dpkg -l 'php8.2*' | awk '/^ii/{print $2, $3}' | grep -v -c '8.2.35-1~ubuntu24.04+1' | sed 's/^/php8.2 packages not at 8.2.35: /'
+dpkg -l php8.2-mongodb | awk '/^ii/{print $2, $3}'; php -r 'echo "mongodb ext: ", phpversion("mongodb"), "\n";'
+echo -n "marked: "; apt-mark showmanual php8.2-mongodb
+echo -n "default php now: "; php -v | head -1

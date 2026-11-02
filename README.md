@@ -35,7 +35,7 @@ upgrade `8.2.7-1ubuntu1` in place.
 ├── test-upgrade.sh       # integration test: 8.2.7-1ubuntu1 (+php8.3, +mongodb) -> 8.2.35
 ├── test-upgrade.log      # its result for the released build
 ├── sury/                 # PPA source package + patched tree
-├── extra/                # noble's libzip4t64 (universe), shipped in the release for php8.2-zip
+├── extra/                # noble's libzip4t64 (for php8.2-zip) + Ubuntu's php8.2-mongodb, shipped in the release
 └── release/              # php8.2-8.2.35-1-noble.tar (debs, SHA256SUMS, script, install.md)
 ```
 

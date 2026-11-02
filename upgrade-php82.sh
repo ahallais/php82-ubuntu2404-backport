@@ -16,6 +16,12 @@ for p in $(echo "$installed" | awk -F'|' '$1 ~ /^[ih]i/ {print $2}'); do
     f=$(ls ./"${p}"_8.2.35-1~ubuntu24.04+1_*.deb 2>/dev/null || true)
     if [ -n "$f" ]; then debs+=("$f"); else echo "Keeping $p (not part of the php8.2 source package)"; fi
 done
+# php8.2-mongodb removed with php8.3 (apt autoremove/purge leaves it in "rc" state): reinstall
+# Ubuntu's 1.15.0 build shipped in the bundle. An installed php8.2-mongodb is never replaced.
+if echo "$installed" | awk -F'|' '$1 ~ /^rc/ && $2 == "php8.2-mongodb" {f=1} END {exit !f}'; then
+    debs+=(./php8.2-mongodb_1.15.0+1.11.1+1.9.2+1.7.5-1build1_amd64.deb)
+    echo "Will reinstall php8.2-mongodb (removed, config files left)"
+fi
 if [ ${#debs[@]} -eq 0 ]; then
     echo "no installed php8.2 package found. dpkg reports:" >&2
     echo "${installed:-  (nothing matching php8.2*)}" >&2
@@ -43,6 +49,8 @@ extra=$(echo "$extra" | grep -v -E '^Inst lib[^ ]+ \(' || true)
 cp -a /etc/php/8.2 "/root/etc-php-8.2.bak.$(date +%F-%H%M)"
 # keep local edits of dpkg conffiles (pool.d/www.conf) and ucf-managed php.ini files
 UCF_FORCE_CONFFOLD=1 apt-get install -y -o Dpkg::Options::=--force-confold "${pkgs[@]}"
+# extensions must not depend on php8.3 meta packages staying installed (apt autoremove)
+if dpkg-query -W -f '${db:Status-Abbrev}' php8.2-mongodb 2>/dev/null | grep -q '^[ih]i'; then apt-mark manual php8.2-mongodb >/dev/null; fi
 php-fpm8.2 -t
 if systemctl is-enabled --quiet php8.2-fpm 2>/dev/null; then systemctl restart php8.2-fpm; fi
 php-fpm8.2 -v | head -1
